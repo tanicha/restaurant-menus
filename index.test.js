@@ -1,5 +1,5 @@
 const {sequelize} = require('./db')
-const {Restaurant, Menu} = require('./models/index')
+const {Restaurant, Menu, Item} = require('./models/index')
 const {
     seedRestaurant,
     seedMenu,
@@ -28,8 +28,27 @@ describe('Restaurant and Menu Models', () => {
 
     test('can create a Menu', async () => {
         const createdMenu = await Menu.create({title: 'Breakfast'})
+        const createdMenu2 = await Menu.create({title: 'Lunch'})
+        const createdMenu3 = await Menu.create({title: 'Dinner'})
 
         expect(createdMenu.title).toEqual('Breakfast')
+        expect(createdMenu2.title).toEqual('Lunch')
+        expect(createdMenu3.title).toEqual('Dinner')
+    });
+
+    test('can create an Item', async () => {
+        const createdItem = await Item.create({name: 'Eggs', image: 'egg', price: 10, vegetarian: false})
+        const createdItem2 = await Item.create({name: 'Fries', image: 'fry', price: 15, vegetarian: true})
+
+        expect(createdItem.name).toBe('Eggs')
+        expect(createdItem.image).toBe('egg')
+        expect(createdItem.price).toBe(10)
+        expect(createdItem.vegetarian).toBe(false)
+
+        expect(createdItem2.name).toBe('Fries')
+        expect(createdItem2.image).toBe('fry')
+        expect(createdItem2.price).toBe(15)
+        expect(createdItem2.vegetarian).toBe(true)
     });
 
     test('can find Restaurants', async () => {
@@ -92,5 +111,47 @@ describe('Restaurant and Menu Models', () => {
         expect(pizzaRestaurant2.rating).toEqual(10)
         expect(pizzaRestaurant2.location).toEqual('New Hampshire')
         expect(pizzaRestaurant2.name).toEqual('Mom Pizza')
+    })
+
+    test('testing adding menu to restaurant', async () => {
+        const someRestaurant = await Restaurant.findByPk(1)
+
+        await someRestaurant.addMenu(1) //adding breakfast menu to Pizzeria pk 1
+        await someRestaurant.addMenu(2) //adding lunch menu to Pizzeria pk 2
+        await someRestaurant.addMenu(3) //adding dinner menu to Pizzeria pk 3
+
+        const menusInRestaurant = await someRestaurant.getMenus()
+        console.log(menusInRestaurant)
+
+        expect(menusInRestaurant.length).toBe(3)
+    })
+
+    test('testing adding item to menu', async () => {
+        const foundMenu = await Menu.findByPk(1) //breakfast pk1
+
+        await foundMenu.addItem(1) //pk 1 eggs to breakfast menu
+        await foundMenu.addItem(2) //pk 2 fries to breakfast menu
+ 
+        const itemInRestaurant = await foundMenu.getItems()
+        console.log(itemInRestaurant)
+
+        expect(itemInRestaurant.length).toBe(2)
+    })
+
+    test('eager loading test menu/item', async () => {
+        const someMenu = await Menu.findAll({
+            include: [
+                {model: Item}
+            ]
+        })
+        //console.log(someMenu[0].items)
+
+        let counter = 0;
+        for (let i = 0; i < someMenu[0].items.length; i++){
+            counter++;
+        }
+        
+        expect(counter).toBe(2)
+        expect(someMenu[0].items.length).toBe(2) //items in my first (breakfast) menu will be eggs and fries (2 items)
     })
 });
